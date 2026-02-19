@@ -1,0 +1,9 @@
+{
+  "name": "vendor-rip",
+  "version": "0.1.1",
+  "description": "Scan, assess, plan, and replace SaaS tools with AI-built code.",
+  "author": { "name": "vendor-rip", "url": "https://vendor.rip" },
+  "repository": "https://github.com/vendor-rip/rip",
+  "license": "MIT",
+  "skills": "./skills/"
+}
