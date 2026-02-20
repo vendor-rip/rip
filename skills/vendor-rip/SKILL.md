@@ -33,9 +33,18 @@ This skill follows a five-step journey:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Between Scan and Plan, the developer can get community context by exchanging scan data at vendor.rip/calibrate. This is a natural part of entering planning — not a separate step. After Done, teams often run `discover` to find more candidates.
+Between Scan and Plan, the developer can get community context by pasting scan data at https://vendor.rip/calibrate. This is a natural part of entering planning — not a separate step. After Done, teams often run `discover` to find more candidates.
 
-Each phase produces structured output. Community exchange is always manual — the developer copies a file and pastes it at vendor.rip/calibrate. You never send data anywhere. Every phase can be entered independently, though later phases benefit from earlier ones.
+**You are the decision-maker.** You read the code, you understand the architecture, you see what's in the stack. This skill provides structure and community data, but you make the product, architecture, and engineering decisions. Community data tells you what worked for other codebases — only you can see what will work for this one. Trust what you observe over what the community reports.
+
+**Why calibration matters — understand this before you start.** There are two calibration moments: after scan (before planning) and after completion (after validation). They serve different purposes and both matter:
+
+- **After scan:** The developer pastes their scan summary and gets back calibrated estimates, peer comparisons, and gotchas from similar migrations. This helps them plan better. Their scan data helps calibrate future recommendations for other developers scanning the same tool.
+- **After completion:** The developer pastes their completion summary — actual duration, actual gotchas, actual approach — and gets back "what to rip next" recommendations based on what teams like theirs did. This is the most valuable moment in the entire flow. The developer just produced ground truth that no other source can provide. Their completion data is what makes scan calibrations accurate for the next person.
+
+The completion calibration prompt is not optional ceremony. It is the natural conclusion of the journey — the developer did real work, they deserve to see what others in their position did next, and their experience makes the system smarter. Always present it. The developer can skip it (Enter to finish), but you must always show it.
+
+Each phase produces structured output. Community context is always opt-in — the developer copies text and pastes it at https://vendor.rip/calibrate to get calibrated insights back. You never send data anywhere. Every phase can be entered independently, though later phases benefit from earlier ones.
 
 All output files are written to the project root. Session state persists in `~/.vendor-rip/session`.
 
@@ -187,7 +196,7 @@ If no token, token is invalid, or network is unavailable:
      Next: Get community context for your migration plan.
 
      1. Copy the block below
-     2. Paste at vendor.rip/calibrate
+     2. Paste at https://vendor.rip/calibrate
      3. Paste the insights code you get back here
 
      tool: {tool_name}
@@ -201,7 +210,7 @@ If no token, token is invalid, or network is unavailable:
        scan_duration: {seconds}s
      session: {token or empty}
 
-     (saved to ./vendor-rip-scan-summary.txt)
+     (saved to ./vendor-rip-calibrate.txt)
    ────────────────────────────────────────────────────────────────
 
    Insights code: ___ (or Enter to plan with local analysis only)
@@ -216,11 +225,11 @@ If no token, token is invalid, or network is unavailable:
 
 ## Phase 2: Community Context (between Scan and Plan)
 
-This is not a separate step in the journey — it's the transition between Scan and Plan. The community exchange happens here, feeding calibration data into the plan. The progress bar stays on `▸ Plan` throughout.
+This is not a separate step in the journey — it's the transition between Scan and Plan. The developer can get community context here to calibrate the plan. The progress bar stays on `▸ Plan` throughout.
 
-### Generate the scan summary
+### Generate the calibration summary
 
-Save to `./vendor-rip-scan-summary.txt` alongside the scan report:
+Save to `./vendor-rip-calibrate.txt` alongside the scan report:
 
 ```
 tool: {tool_name}
@@ -236,7 +245,7 @@ evidence:
 session: {read from ~/.vendor-rip/session if it exists, otherwise leave empty}
 ```
 
-The summary text is printed inline in the scan output — the developer copies it directly from the terminal. The file is a backup for programmatic use or later reference.
+The calibration text is printed inline in the scan output — the developer copies it directly from the terminal. The file is a backup for programmatic use or later reference.
 
 ### Handling the response
 
@@ -244,7 +253,7 @@ The summary text is printed inline in the scan output — the developer copies i
 
 The code is a short string like `vrip_8nK3qM2pL4...`.
 
-1. Make a GET request to `https://api.vendor.rip/insights/{code}`
+1. Make a GET request to `https://vendor.rip/api/insights/{code}`
 2. The response contains: peer comparison data, calibrated estimates, and a session token
 3. Store the session token to `~/.vendor-rip/session` (create the directory and file if needed)
 4. Display with updated progress bar:
@@ -281,14 +290,14 @@ Do not create or update any session file.
 
 **If you cannot make HTTP requests** (agent capability limitation):
 
-Display: "Cannot fetch community context in this environment. The scan summary is saved to ./vendor-rip-scan-summary.txt — you can paste it at vendor.rip/calibrate manually." Then proceed to the "Generate migration plan?" prompt.
+Display: "Cannot fetch community context in this environment. The scan summary is saved to ./vendor-rip-calibrate.txt — you can paste it at https://vendor.rip/calibrate manually." Then proceed to the "Generate migration plan?" prompt.
 
 ### Session management
 
 - Check for `~/.vendor-rip/session` at scan start. If it exists, read the token.
-- Sessions can be pre-seeded from the website chat via a handoff token (`vrip_h_` prefix), or created after the first community calibration exchange. Both use the same session file.
+- Sessions can be pre-seeded from the website chat via a handoff token (`vrip_h_` prefix), or created when the developer first pastes an insights code. Both use the same session file.
 - Include the token in the `session:` field of every calibration summary. The developer can see it and delete it before pasting for an anonymous submission.
-- If the file does not exist and the developer completes a community exchange, store the token from the insights code response.
+- If the file does not exist and the developer pastes an insights code, store the token from the response.
 - The session file is a single line containing only the token string.
 
 ---
@@ -297,22 +306,24 @@ Display: "Cannot fetch community context in this environment. The scan summary i
 
 ### Goal
 
-Generate a phased migration plan. Use community calibration data if available from Phase 2, otherwise use local analysis.
+Generate a phased migration plan based on what you actually observed in the scan. You are the decision-maker — the code you read is the primary source of truth.
+
+Community calibration data from Phase 2 is one input among many. It tells you what worked for other codebases, not what will work for this one. Use it as a signal — especially gotchas and time estimates — but trust what you see in the code over what the community reports. If the community says "adapter pattern" but the integration is 10 files and you can read every call site, do a direct replacement. If the community says "2 days" but you see deep state coupling, say it's harder.
 
 ### Methodology
 
 1. **Select approach**
 
-   Choose the migration approach based on what you observed in the scan:
+   Choose the migration approach based on what you observed in the scan. These are starting points, not rules:
 
-   | Integration pattern | Recommended approach |
+   | Integration pattern | Typical approach |
    |---|---|
    | Few calls, concentrated in one or two files | Direct replacement — rewrite the files |
    | Many calls scattered across many files | Adapter pattern — create a wrapper, replace behind it |
    | Deep integration with business logic | Incremental replacement — swap feature by feature |
    | Mixed patterns | Adapter + incremental — wrap first, then replace incrementally |
 
-   If community data is available from Phase 2, prefer the approach with the highest observed success rate among similar integrations.
+   You may deviate from these patterns. Only you can see the full picture: the surrounding architecture, what's already in the stack, how the team uses the tool, and what product decisions are embedded in the integration. Community data from Phase 2 — especially gotchas and failure modes — should inform your reasoning, but never override what the code tells you.
 
    Present the chosen approach to the developer with your rationale. Let them override your choice.
 
@@ -422,7 +433,7 @@ Display the progress bar at each phase boundary:
 
 ### Guidelines
 
-Follow the plan phase by phase. Do not skip ahead.
+The plan is a starting point, not a contract. Follow it phase by phase, but adapt as you go — you will learn things during execution that weren't visible during planning. Collapse phases that turn out to be trivial. Split phases that turn out to be harder than expected. The goal is a working replacement, not plan compliance.
 
 **At each phase boundary:**
 - Run the validation criteria before proceeding to the next phase
@@ -432,12 +443,14 @@ Follow the plan phase by phase. Do not skip ahead.
 **When making implementation decisions:**
 - Search the web for current best libraries. Do not rely on stale knowledge.
 - When multiple libraries could work, present options with tradeoffs. Let the developer choose. You execute.
+- Make product recommendations when you see opportunities. If you notice a feature is only used in tests, say so. If you see that PostHog is already in the stack and can absorb the use case, recommend it. The developer decides, but you should have an opinion.
 
 **When the plan hits reality:**
 - If you discover something the scan missed, stop, report it, and adjust the plan.
 - If a phase is taking significantly longer than estimated, say so.
+- If a phase turns out to be unnecessary, skip it and explain why.
 
-**Commits:** At each phase boundary, ask the developer if they want a git commit. These serve as rollback points — if a later phase fails, the developer can revert to the last checkpoint. Never commit without asking. Never force-push or amend.
+**Commits:** At each phase boundary *during execution*, ask the developer if they want a git commit. These serve as rollback points — if a later phase fails, the developer can revert to the last checkpoint. Never commit without asking. Never force-push or amend. Do NOT offer commits after validation or during the completion display — those are separate phases with their own flow.
 
 ### Decision points to surface
 
@@ -445,13 +458,13 @@ Stop and ask rather than deciding silently: library choices, data decisions (mig
 
 ---
 
-## Phase 5: Validate
+## Phase 5: Validate & Complete
 
 ### Goal
 
-Verify the replacement works correctly and the old tool is fully removed.
+Verify the replacement works and produce the completion report. This is one continuous flow — do not pause for commits or other interactions between validation and the completion display.
 
-### Checklist
+### Step 1: Run validation checks
 
 Run these checks in order. If any fail, fix and re-check before proceeding.
 
@@ -459,40 +472,14 @@ Run these checks in order. If any fail, fix and re-check before proceeding.
 2. **Grep for old SDK references** — imports, API key references, config variables. Flag comments mentioning the old tool but do not auto-remove them.
 3. **Check configuration** — `.env` files, tool-specific config files (`amplitude.config.js`, `.amplituderc`), CI config, build tool plugins.
 4. **Verify dependency removal** — confirm old packages are gone from the dependency file and lock file. If not, remove and reinstall.
-5. **Prompt for manual verification** — list the key behaviors the developer should verify (feature-specific, based on what was replaced).
 
-### Display format
+### Step 2: Compute the post-migration lock hash
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  ✓ Scan   ✓ Plan   ✓ Execute   ▸ Validate   ○ Done        │
-└─────────────────────────────────────────────────────────────┘
+Re-read the lock file for the tool's packages (should now be empty). Compute `lock_hash_after` the same way as the scan's `lock_hash`: sort all related package names alphabetically, concatenate as `{name}@{version}` joined by newlines, SHA-256 the result. If the packages are fully removed, record `sha256:0000000000000000000000000000000000000000000000000000000000000000`.
 
-Validation Results:
+### Step 3: Save completion artifacts
 
-  Tests: 47 passed, 0 failed
-  Old SDK references: 0 remaining
-  Old config entries: 0 remaining
-  Dependencies removed: <list>
-
-  Manual checks needed:
-    - <check_1>
-    - <check_2>
-
-All automated checks passed.
-```
-
----
-
-## Phase 6: Complete
-
-### Goal
-
-Produce the completion report and offer to exchange outcomes with the community.
-
-### Completion report
-
-Save to `./vendor-rip-completion.json`. This extends the scan report (all fields from `vendor-rip-report.json` are included) plus:
+Save `./vendor-rip-completion.json`. This extends the scan report (all fields from `vendor-rip-report.json` are included) plus:
 
 ```json
 {
@@ -525,31 +512,31 @@ Save to `./vendor-rip-completion.json`. This extends the scan report (all fields
 }
 ```
 
-Include one entry in `phases` per migration phase actually executed, with honest `actual_days`. Record every gotcha — these are the most valuable data points for the community.
+Include one entry in `per_feature_timing` per feature actually replaced, with honest timing. Record every gotcha — these are the most valuable data points for the community.
 
-### Completion summary
-
-Generate and save to `./vendor-rip-completion-summary.txt`:
+Save `./vendor-rip-completion-calibrate.txt`:
 
 ```
-tool: amplitude
-sdk: @amplitude/analytics-browser@2.8.0
+tool: {tool_name}
+sdk: {sdk_package}@{sdk_version}
 features:
-  - event_tracking: 14 calls -> replaced (0.5 days)
-  - user_identification: 3 calls -> replaced (0.3 days)
-  - experimentation: 4 calls -> replaced (2.5 days)
-approach: adapter pattern
-duration: 5.2 days
-outcome: success
-gotcha: experiment assignment had hidden state in localStorage — needed migration
+  - {feature}: {calls_count} calls -> replaced ({days} days)
+approach: {approach}
+duration: {total_days} days
+outcome: {outcome}
+gotcha: {gotcha or "none"}
 evidence:
-  lock_hash_before: sha256:a1b2c3d4e5f6
-  lock_hash_after: sha256:x7y8z9a0b1c2
-  scan_duration: 12.4s
+  lock_hash_before: {sha256}
+  lock_hash_after: {sha256}
+  scan_duration: {seconds}s
 session: {read from ~/.vendor-rip/session, or empty}
 ```
 
-### Display the completion report and transition
+### Step 4: Display the completion report and next steps
+
+This is the most important output of the entire skill. The developer just completed a real migration — they have ground truth (actual timing, actual gotchas, actual approach) that makes the community smarter for the next person. And in return, they get "what to rip next" recommendations. Always present the full block below, including the calibration text and the `Insights code:` prompt. The developer can skip (Enter to finish), but you must always show it.
+
+**Display the entire block below as one output — do not stop between parts. Do not ask about commits, PRs, or anything else before showing this full block.**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -569,13 +556,17 @@ session: {read from ~/.vendor-rip/session, or empty}
 
   Validation: {passed} passed, {failed} failed | {remaining} old references remaining
 
+  Manual checks needed:
+    - <check_1>
+    - <check_2>
+
   Saved: ./vendor-rip-completion.json
 
 ────────────────────────────────────────────────────────────────
   Next: See what teams like yours did after this.
 
   1. Copy the block below
-  2. Paste at vendor.rip/calibrate
+  2. Paste at https://vendor.rip/calibrate
   3. Paste the insights code you get back here
 
   tool: {tool_name}
@@ -592,17 +583,19 @@ session: {read from ~/.vendor-rip/session, or empty}
     scan_duration: {seconds}s
   session: {token or empty}
 
-  (saved to ./vendor-rip-completion-summary.txt)
+  (saved to ./vendor-rip-completion-calibrate.txt)
 ────────────────────────────────────────────────────────────────
 
 Insights code: ___ (or Enter to finish)
 ```
 
+**After showing this output, wait for the developer's response (insights code or Enter). Only THEN offer commits, PRs, or other follow-up actions.**
+
 ### Handling the response
 
 **If the developer pastes an insights code:**
 
-1. Make a GET request to `https://api.vendor.rip/insights/{code}`
+1. Make a GET request to `https://vendor.rip/api/insights/{code}`
 2. The response contains peer cluster data and recommendations
 3. Update `~/.vendor-rip/session` with the refreshed token
 4. Display with all-done progress bar:
@@ -632,12 +625,12 @@ Run a discovery scan? (y/n)
 │  ✓ Scan   ✓ Plan   ✓ Execute   ✓ Validate   ✓ Done        │
 └─────────────────────────────────────────────────────────────┘
 
-Done. Reports saved to ./vendor-rip-completion.json and ./vendor-rip-completion-summary.txt
+Done. Reports saved to ./vendor-rip-completion.json and ./vendor-rip-completion-calibrate.txt
 ```
 
 ---
 
-## Phase 7: Discover
+## Phase 6: Discover
 
 ### Goal
 
@@ -646,7 +639,7 @@ Broad scan of the codebase to find all SaaS tool dependencies that might be repl
 ### Entry points
 
 - `vendor-rip discover` (direct)
-- After a completion exchange, when peer cluster data suggests categories to explore
+- After getting completion insights, when peer cluster data suggests categories to explore
 
 ### Methodology
 
@@ -692,6 +685,24 @@ Broad scan of the codebase to find all SaaS tool dependencies that might be repl
    }
    ```
 
+   Also save `./vendor-rip-discovery-calibrate.txt`:
+
+   ```
+   stack: {detected_framework}
+   tools:
+     - {tool}: {category}, {points} points, {complexity}, rip_est: {score}
+     ...
+   quick_wins: {count}
+   bigger_projects: {count}
+   probably_keep: {count}
+   total_tools: {count}
+   evidence:
+     scan_duration: {seconds}s
+   session: {read from ~/.vendor-rip/session if it exists, otherwise leave empty}
+   ```
+
+   The calibration text is printed inline in the discovery output — the developer copies it directly from the terminal. The file is a backup for later reference.
+
 5. **Categorize and display**
 
    Sort into: **Quick wins** (< 3 days, trivial-moderate), **Bigger projects** (3+ days, moderate-hard), **Probably keep** (very_hard, deeply integrated, or high value). Show savings only when pricing data is available.
@@ -725,8 +736,71 @@ Broad scan of the codebase to find all SaaS tool dependencies that might be repl
 
    Saved: ./vendor-rip-discovery.json
 
+   ────────────────────────────────────────────────────────────────
+     Next: See how your stack compares to similar teams.
+
+     1. Copy the block below
+     2. Paste at https://vendor.rip/calibrate
+     3. Paste the insights code you get back here
+
+     stack: {detected_framework}
+     tools:
+       - {tool}: {category}, {points} points, {complexity}, rip_est: {score}
+       ...
+     quick_wins: {count}
+     bigger_projects: {count}
+     probably_keep: {count}
+     total_tools: {count}
+     evidence:
+       scan_duration: {seconds}s
+     session: {token or empty}
+
+     (saved to ./vendor-rip-discovery-calibrate.txt)
+   ────────────────────────────────────────────────────────────────
+
+   Insights code: ___ (or Enter to skip)
+   ```
+
+### Handling the discovery calibration response
+
+**If the developer pastes an insights code:**
+
+1. Make a GET request to `https://vendor.rip/api/insights/{code}`
+2. The response contains: stack comparison, priority recommendations, and a session token
+3. Store the session token to `~/.vendor-rip/session` (create the directory and file if needed)
+4. Display:
+
+   ```
+   ┌──────────────────────────────────────┐
+   │  ▸ Discover   ○ Scan   ○ Plan  ...  │
+   └──────────────────────────────────────┘
+
+   Community context loaded.
+
+     Your stack compared to {N} similar teams:
+       Most common first rip: {tool} ({category}) — avg {days} days
+       Teams like yours typically rip {avg_tools} tools
+       Stack insight: "{insight}"
+
+     Priority recommendations:
+       {tool}    — {reason}
+       {tool}    — {reason}
+       {tool}    — {reason}
+
    Deep scan a tool? (type name, or Enter to finish)
    ```
+
+5. Use this context when the developer selects a tool for deep scan.
+
+**If the developer presses Enter (skip):**
+
+   ```
+   Deep scan a tool? (type name, or Enter to finish)
+   ```
+
+**If you cannot make HTTP requests** (agent capability limitation):
+
+Display: "Cannot fetch community context in this environment. The discovery summary is saved to ./vendor-rip-discovery-calibrate.txt — you can paste it at https://vendor.rip/calibrate manually." Then proceed to the "Deep scan a tool?" prompt.
 
    If the developer names a tool, update the progress bar and run Phase 1 (Scan):
 
@@ -748,7 +822,7 @@ Handle these situations gracefully — degrade, don't crash.
 | **Scan interrupted** | Do not save partial results. Report what happened. The developer can re-run — scans are idempotent. |
 | **Migration fails (tests break)** | Show the failing tests. Do NOT overwrite the developer's code without confirmation. Offer: fix the issue, revert to last checkpoint (git commit), or abort. |
 | **Validation fails** | Show specific failures. Offer: fix and re-validate, accept as partial outcome, or abandon. |
-| **Network unavailable** | "Cannot reach vendor.rip. Skipping community insights." All local functionality works — the skill never blocks on network. |
+| **Network unavailable** | "Cannot reach https://vendor.rip. Skipping community insights." All local functionality works — the skill never blocks on network. |
 | **Invalid insights code** | "That code didn't work. Try copying it again, or press Enter to skip." Allow retry. |
 | **Tool profile malformed** | Log a warning. Fall back to agent-only reasoning. Do not fail the scan. |
 | **Insufficient file permissions** | Report which files are inaccessible. Proceed with what's available. Note the gap in the report. |
@@ -771,7 +845,7 @@ The results are still useful — a capable agent reasoning about code patterns b
 
 ### Contributing new patterns
 
-When a scan or migration produces new data — method classifications, validated complexity ratings, discovered gotchas — note them. These can be contributed back through the community calibration exchange or as PRs to the profiles repository.
+When a scan or migration produces new data — method classifications, validated complexity ratings, discovered gotchas — note them. These can be contributed back via https://vendor.rip/calibrate or as PRs to the profiles repository.
 
 ---
 
@@ -780,12 +854,13 @@ When a scan or migration produces new data — method classifications, validated
 | File | Created when | Purpose |
 |---|---|---|
 | `./vendor-rip-report.json` | After scan (Phase 1) | Full local scan report |
-| `./vendor-rip-scan-summary.txt` | After scan (Phase 2) | Scan summary for community calibration exchange |
+| `./vendor-rip-calibrate.txt` | After scan (Phase 2) | Scan summary for community calibration |
 | `./vendor-rip-plan.json` | After planning (Phase 3) | Migration plan with phases, tasks, validation criteria |
-| `./vendor-rip-completion.json` | After migration (Phase 6) | Full completion report extending scan report |
-| `./vendor-rip-completion-summary.txt` | After migration (Phase 6) | Completion summary for community calibration exchange |
-| `./vendor-rip-discovery.json` | After discovery (Phase 7) | All detected SaaS tools with quick assessments |
-| `~/.vendor-rip/session` | After first calibration exchange | Session token for linking exchanges across projects |
+| `./vendor-rip-completion.json` | After validate & complete (Phase 5) | Full completion report extending scan report |
+| `./vendor-rip-completion-calibrate.txt` | After validate & complete (Phase 5) | Completion summary for community calibration |
+| `./vendor-rip-discovery.json` | After discovery (Phase 6) | All detected SaaS tools with quick assessments |
+| `./vendor-rip-discovery-calibrate.txt` | After discovery (Phase 6) | Discovery summary for community calibration |
+| `~/.vendor-rip/session` | After first calibration | Session token for linking calibrations across projects |
 
 All project files are written to the project root (next to `package.json` or equivalent). The session file is the only file written outside the project.
 
@@ -795,7 +870,7 @@ All project files are written to the project root (next to `package.json` or equ
 
 This skill is designed around a simple principle: the developer sees everything.
 
-- **No hidden data.** The calibration summaries are plain text. What the developer reads is exactly what gets exchanged. No JSON blobs, no encoded payloads, no hidden fields.
-- **No network calls without consent.** The only network call this skill makes is a GET to `https://api.vendor.rip/insights/{code}` when the developer explicitly pastes an insights code. The skill never phones home, never sends telemetry, never posts data.
-- **Session is visible and deletable.** The session token appears in every calibration summary. The developer can delete it from the text before pasting (anonymous exchange) or delete `~/.vendor-rip/session` entirely.
-- **Local-first.** Every phase produces useful output without any network interaction. Sharing is a bonus, not a requirement.
+- **No hidden data.** The calibration summaries are plain text. What the developer reads is exactly what gets pasted. No JSON blobs, no encoded payloads, no hidden fields.
+- **No network calls without consent.** The only network call this skill makes is a GET to `https://vendor.rip/api/insights/{code}` when the developer explicitly pastes an insights code. The skill never phones home, never sends telemetry, never posts data.
+- **Session is visible and deletable.** The session token appears in every calibration summary. The developer can delete it from the text before pasting (anonymous calibration) or delete `~/.vendor-rip/session` entirely.
+- **Local-first.** Every phase produces useful output without any network interaction. Community calibration is a bonus, not a requirement.
